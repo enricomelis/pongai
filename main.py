@@ -42,6 +42,7 @@ def handle_movement_right(paddle_down, keys_pressed):
     if keys_pressed[pygame.K_LEFT] and paddle_down.x - PADDLE_VEL > 0:
         paddle_down.x -= PADDLE_VEL
     if keys_pressed[pygame.K_RIGHT] and paddle_down.x + PADDLE_VEL + paddle_down.width < WIDTH:
+        paddle_down.x += PADDLE_VEL
 
 def handle_movement_ball_x(ball, ball_vel_x):
     ball.x += ball_vel_x

@@ -98,9 +98,20 @@ def write_vel():
 
     return ball_vel_x, ball_vel_y
 
-def save_game_state_to_csv(ball, ball_vel_x, ball_vel_y, paddle_up, paddle_down, point):
+def save_game_state_to_csv(ball, ball_vel_x, ball_vel_y, paddle_up, paddle_down, point, keys_pressed):
     csv_file = 'game_states.csv'
-    header = ['ball_x', 'ball_y', 'ball_vel_x', 'ball_vel_y', 'paddle_up_x', 'paddle_up_y', 'paddle_up_vel', 'paddle_down_x', 'paddle_down_y', 'point']
+    header = ['ball_x', 'ball_y', 'ball_vel_x', 'ball_vel_y', 'paddle_up_x', 'paddle_up_y', 'paddle_up_vel', 'paddle_down_x', 'paddle_down_y', 'point', 'key_up', 'key_down']
+    key_up = ''
+    key_down = ''
+    
+    if keys_pressed[pygame.K_a]:
+        key_up = 'a'
+    if keys_pressed[pygame.K_d]:
+        key_up = 'd'
+    if keys_pressed[pygame.K_LEFT]:
+        key_down = 'LEFT'
+    if keys_pressed[pygame.K_RIGHT]:
+        key_down = 'RIGHT'
 
     try:
         with open(csv_file, 'r') as f:
@@ -112,7 +123,7 @@ def save_game_state_to_csv(ball, ball_vel_x, ball_vel_y, paddle_up, paddle_down,
 
     with open(csv_file, 'a', newline='') as f:
         writer = csv.writer(f)
-        writer.writerow([ball.x, ball.y, ball_vel_x, ball_vel_y, paddle_up.x, paddle_up.y, PADDLE_VEL, paddle_down.x, paddle_down.y, point])
+        writer.writerow([ball.x, ball.y, ball_vel_x, ball_vel_y, paddle_up.x, paddle_up.y, PADDLE_VEL, paddle_down.x, paddle_down.y, point, key_up, key_down])
 
 
 def main():
@@ -156,7 +167,7 @@ def main():
         
 
         if time.time() - start_time >= 2:
-            save_game_state_to_csv(ball, ball_vel_x, ball_vel_y, paddle_up, paddle_down, point)
+            save_game_state_to_csv(ball, ball_vel_x, ball_vel_y, paddle_up, paddle_down, point, keys_pressed)
             start_time = time.time()  
 
         draw_window(paddle_up, paddle_down, ball, paddle_up_score_text, paddle_down_score_text)

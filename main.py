@@ -1,5 +1,8 @@
 import pygame
 import random
+import csv
+import time
+import sys
 
 pygame.display.set_caption("PongAI")
 pygame.font.init()
@@ -77,9 +80,15 @@ def point_made(ball, paddle_up, paddle_down):
         return_def_position(paddle_up, paddle_down, ball)
         pygame.event.post(pygame.event.Event(POINT_DOWN))
         pygame.time.delay(1000)
+        return 'POINT_DOWN'
     if ball.y >= HEIGHT - 2*PADDLE_HEIGHT:
+        return_def_position(paddle_up, paddle_down, ball)
         pygame.event.post(pygame.event.Event(POINT_UP))
         pygame.time.delay(1000)
+        return 'POINT_UP'
+    else:
+        return 'GAME_GOING'
+    
 
 def write_vel():
     x = random.choice([-1, 1])
@@ -89,7 +98,25 @@ def write_vel():
 
     return ball_vel_x, ball_vel_y
 
+def save_game_state_to_csv(ball, ball_vel_x, ball_vel_y, paddle_up, paddle_down, point):
+    csv_file = 'game_states.csv'
+    header = ['ball_x', 'ball_y', 'ball_vel_x', 'ball_vel_y', 'paddle_up_x', 'paddle_up_y', 'paddle_up_vel', 'paddle_down_x', 'paddle_down_y', 'point']
+
+    try:
+        with open(csv_file, 'r') as f:
+            pass
+    except FileNotFoundError:
+        with open(csv_file, 'w', newline='') as f:
+            writer = csv.writer(f)
+            writer.writerow(header)
+
+    with open(csv_file, 'a', newline='') as f:
+        writer = csv.writer(f)
+        writer.writerow([ball.x, ball.y, ball_vel_x, ball_vel_y, paddle_up.x, paddle_up.y, PADDLE_VEL, paddle_down.x, paddle_down.y, point])
+
+
 def main():
+    start_time = time.time()
     paddle_up = pygame.Rect(WIDTH//2 - PADDLE_WIDTH//2, 0 + PADDLE_HEIGHT, PADDLE_WIDTH, PADDLE_HEIGHT)
     paddle_down = pygame.Rect(WIDTH//2 - PADDLE_WIDTH//2, HEIGHT - 2*PADDLE_HEIGHT, PADDLE_WIDTH, PADDLE_HEIGHT)
     ball = pygame.Rect(WIDTH//2 - BALL_SIDE//2, HEIGHT//2 - BALL_SIDE//2, BALL_SIDE, BALL_SIDE)
@@ -100,6 +127,7 @@ def main():
     clock = pygame.time.Clock()
     run = True
     while run:
+        point = 'GAME_GOING'
         clock.tick(FPS)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -124,8 +152,13 @@ def main():
         ball_vel_x = handle_movement_ball_x(ball, ball_vel_x)
         handle_movement_ball_y(paddle_up, paddle_down, ball, ball_vel_y)
         ball_vel_y = handle_movement_ball_y(paddle_up, paddle_down, ball, ball_vel_y)
-        point_made(ball, paddle_up, paddle_down)
+        point = point_made(ball, paddle_up, paddle_down)
         
+
+        if time.time() - start_time >= 2:
+            save_game_state_to_csv(ball, ball_vel_x, ball_vel_y, paddle_up, paddle_down, point)
+            start_time = time.time()  
+
         draw_window(paddle_up, paddle_down, ball, paddle_up_score_text, paddle_down_score_text)
 
 if __name__ == "__main__":

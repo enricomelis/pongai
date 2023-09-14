@@ -2,7 +2,6 @@ import pygame
 import random
 import csv
 import time
-import sys
 
 pygame.display.set_caption("PongAI")
 pygame.font.init()

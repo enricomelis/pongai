@@ -2,6 +2,11 @@ import pygame
 import random
 import csv
 import time
+import numpy as np
+import pandas as pd
+import tensorflow as tf
+
+model = tf.keras.models.load_model('pong_game_model.h5')
 
 pygame.display.set_caption("PongAI")
 pygame.font.init()
@@ -34,13 +39,13 @@ def draw_window(paddle_up, paddle_down, ball, paddle_up_score_text, paddle_down_
 
     pygame.display.update()
 
-def handle_movement_left(paddle_up, keys_pressed):
+def handle_movement_up(paddle_up, keys_pressed):
     if keys_pressed[pygame.K_a] and paddle_up.x - PADDLE_VEL > 0:
         paddle_up.x -= PADDLE_VEL
     if keys_pressed[pygame.K_d] and paddle_up.x + PADDLE_VEL + paddle_up.width < WIDTH:
         paddle_up.x += PADDLE_VEL
 
-def handle_movement_right(paddle_down, keys_pressed):
+def handle_movement_down(paddle_down, keys_pressed):
     if keys_pressed[pygame.K_LEFT] and paddle_down.x - PADDLE_VEL > 0:
         paddle_down.x -= PADDLE_VEL
     if keys_pressed[pygame.K_RIGHT] and paddle_down.x + PADDLE_VEL + paddle_down.width < WIDTH:
@@ -97,8 +102,8 @@ def write_vel():
 
     return ball_vel_x, ball_vel_y
 
-def save_game_state_to_csv(ball, ball_vel_x, ball_vel_y, paddle_up, paddle_down, point, keys_pressed):
-    csv_file = 'game_states.csv'
+def save_game_state_to_csv(ball, ball_vel_x, ball_vel_y, paddle_up, paddle_down, point, keys_pressed, filename):
+    csv_file = filename
     header = ['ball_x', 'ball_y', 'ball_vel_x', 'ball_vel_y', 'paddle_up_x', 'paddle_up_y', 'paddle_up_vel', 'paddle_down_x', 'paddle_down_y', 'point', 'key_up', 'key_down']
     key_up = ''
     key_down = ''
@@ -123,6 +128,14 @@ def save_game_state_to_csv(ball, ball_vel_x, ball_vel_y, paddle_up, paddle_down,
     with open(csv_file, 'a', newline='') as f:
         writer = csv.writer(f)
         writer.writerow([ball.x, ball.y, ball_vel_x, ball_vel_y, paddle_up.x, paddle_up.y, PADDLE_VEL, paddle_down.x, paddle_down.y, point, key_up, key_down])
+
+def handle_movement_model(paddle_up, action):
+    if action == 0:
+        if paddle_up.x - PADDLE_VEL > 0:
+            paddle_up.x -= PADDLE_VEL
+    if action == 1:
+        if paddle_up.x + PADDLE_VEL + paddle_up.width < WIDTH:
+            paddle_up.x += PADDLE_VEL
 
 
 def main():
@@ -156,8 +169,19 @@ def main():
         paddle_down_score_text = pygame.font.SysFont("comicsans", 30).render(f"{paddle_down_score}", 1, BLUE)
         
         keys_pressed = pygame.key.get_pressed()
-        handle_movement_left(paddle_up, keys_pressed)
-        handle_movement_right(paddle_down, keys_pressed)
+
+
+
+        
+        game_state = np.array([ball.x, ball.y, ball_vel_x, ball_vel_y, paddle_up.x, paddle_up.y, PADDLE_VEL, paddle_down.x, paddle_down.y])
+        game_state = game_state.reshape(1, -1).astype('float32')
+        predicted_action = model.predict(game_state)
+        action = np.argmax(predicted_action)
+        handle_movement_model(paddle_up, action)
+        
+
+        # handle_movement_up(paddle_up, keys_pressed)
+        handle_movement_down(paddle_down, keys_pressed)
         handle_movement_ball_x(ball, ball_vel_x)
         ball_vel_x = handle_movement_ball_x(ball, ball_vel_x)
         handle_movement_ball_y(paddle_up, paddle_down, ball, ball_vel_y)
@@ -165,8 +189,8 @@ def main():
         point = point_made(ball, paddle_up, paddle_down)
         
 
-        if time.time() - start_time >= 2:
-            save_game_state_to_csv(ball, ball_vel_x, ball_vel_y, paddle_up, paddle_down, point, keys_pressed)
+        if time.time() - start_time >= 1:
+            save_game_state_to_csv(ball, ball_vel_x, ball_vel_y, paddle_up, paddle_down, point, keys_pressed, filename='game_states.csv')
             start_time = time.time()  
 
         draw_window(paddle_up, paddle_down, ball, paddle_up_score_text, paddle_down_score_text)
